@@ -103,7 +103,7 @@ pub mod cert {
             error::ClientError,
         };
 
-        /// Delete's the root CA
+        /// Deletes the root CA
         ///
         /// See [DeleteRootRequest]
         #[instrument(skip(client), err)]
@@ -355,6 +355,91 @@ pub mod cert {
             let endpoint = opts.unwrap_or(&mut t).mount(mount).build().unwrap();
             api::exec_with_empty(client, endpoint).await
         }
+    }
+}
+
+pub mod issuer {
+    use crate::{
+        api::{
+            self,
+            pki::{
+                requests::{
+                    DeleteIssuerRequest, ImportIssuerRequest, ReadIssuerCertificateRequest,
+                },
+                responses::{ImportIssuerResponse, ReadIssuerCertificateResponse},
+            },
+        },
+        client::Client,
+        error::ClientError,
+    };
+
+    /// Read issuer's certificate
+    ///
+    /// # Arguments
+    ///
+    /// * `client`: vault client
+    /// * `mount`: vault pki mount path
+    /// * `issuer`: issuer name or id (`default` if not specified)
+    ///
+    /// See [ReadIssuerCertificateRequest]
+    #[instrument(skip(client, issuer), err)]
+    pub async fn read(
+        client: &impl Client,
+        mount: &str,
+        issuer: Option<&str>,
+    ) -> Result<ReadIssuerCertificateResponse, ClientError> {
+        let endpoint = ReadIssuerCertificateRequest::builder()
+            .mount(mount)
+            .issuer(issuer.unwrap_or("default"))
+            .build()
+            .unwrap();
+        api::exec_with_result(client, endpoint).await
+    }
+
+    /// Import CA certificate and private key bundle
+    ///
+    /// # Arguments
+    ///
+    /// * `client`: vault client
+    /// * `mount`: vault pki mount path
+    /// * `pem_bundle`: certificate and private key concatenated in any order
+    ///
+    /// See [ImportIssuerRequest]
+    #[instrument(skip(client, pem_bundle), err)]
+    pub async fn import(
+        client: &impl Client,
+        mount: &str,
+        pem_bundle: &str,
+    ) -> Result<ImportIssuerResponse, ClientError> {
+        let endpoint = ImportIssuerRequest::builder()
+            .mount(mount)
+            .pem_bundle(pem_bundle)
+            .build()
+            .unwrap();
+        api::exec_with_result(client, endpoint).await
+    }
+
+    /// Delete issuer
+    ///
+    /// # Arguments
+    ///
+    /// * `client`: vault client
+    /// * `mount`: vault pki mount path
+    /// * `issuer`: issuer name or id
+    ///
+    /// See [DeleteIssuerRequest]
+    #[instrument(skip(client), err)]
+    pub async fn delete(
+        client: &impl Client,
+        mount: &str,
+        issuer: &str,
+    ) -> Result<(), ClientError> {
+        let endpoint = DeleteIssuerRequest::builder()
+            .mount(mount)
+            .issuer(issuer)
+            .build()
+            .unwrap();
+        api::exec_with_empty(client, endpoint).await
     }
 }
 

@@ -9,3 +9,7 @@ Cargo.lock
 .prettierrc
 lefthook.yml
 treefmt.toml
+
+.idea/*
+.vscode/*
+*.kdl

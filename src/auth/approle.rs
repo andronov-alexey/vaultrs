@@ -242,7 +242,7 @@ pub mod role {
             api::exec_with_result(client, endpoint).await
         }
 
-        /// Lists ApplRole secret IDs.
+        /// Lists AppleRole secret IDs.
         ///
         /// See [ListSecretIDRequest]
         #[instrument(skip(client), err)]

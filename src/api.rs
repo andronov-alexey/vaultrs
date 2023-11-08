@@ -211,7 +211,13 @@ where
         .exec(client.http())
         .await
         .map_err(parse_err)
-        .map(|_| ())
+        .map(|res| {
+            info!(
+                "exec_with_empty returned non-empty result: {:?}",
+                res.response
+            );
+            ()
+        })
 }
 
 /// Executes an [Endpoint] which is expected to return an empty API result.

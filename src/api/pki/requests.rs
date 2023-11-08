@@ -1,8 +1,9 @@
 use super::responses::{
     GenerateCertificateResponse, GenerateIntermediateResponse, GenerateRootResponse,
-    ListCertificatesResponse, ListRolesResponse, ReadCRLConfigResponse, ReadCertificateResponse,
-    ReadRoleResponse, ReadURLsResponse, RevokeCertificateResponse, RotateCRLsResponse,
-    SignCertificateResponse, SignIntermediateResponse, SignSelfIssuedResponse,
+    ImportIssuerResponse, ListCertificatesResponse, ListRolesResponse, ReadCRLConfigResponse,
+    ReadCertificateResponse, ReadIssuerCertificateResponse, ReadRoleResponse, ReadURLsResponse,
+    RevokeCertificateResponse, RotateCRLsResponse, SignCertificateResponse,
+    SignIntermediateResponse, SignSelfIssuedResponse,
 };
 use rustify_derive::Endpoint;
 
@@ -33,7 +34,7 @@ pub struct SubmitCARequest {
 ///
 /// * Path: {self.mount}/root/generate/{self.cert_type}
 /// * Method: POST
-/// * Response: [Option<GenerateRootResponse]
+/// * Response: [Option<GenerateRootResponse>]
 /// * Reference: https://www.vaultproject.io/api/secret/pki#generate-root
 #[derive(Builder, Debug, Default, Endpoint)]
 #[endpoint(
@@ -600,4 +601,70 @@ pub struct TidyRequest {
     pub tidy_cert_store: Option<bool>,
     pub tidy_revoked_certs: Option<bool>,
     pub safety_buffer: Option<String>,
+}
+
+/// ## Read issuer certificate
+/// This endpoint retrieves the specified issuer's certificate and CA chain.
+///
+/// * Path: {self.mount}/issuer/{self.issuer}/json
+/// * Method: GET
+/// * Response: [ReadIssuerCertificateResponse]
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#read-issuer-certificate
+
+#[derive(Builder, Debug, Default, Endpoint)]
+#[endpoint(
+    path = "{self.mount}/issuer/{self.issuer}/json",
+    response = "ReadIssuerCertificateResponse",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct ReadIssuerCertificateRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    #[endpoint(skip)]
+    pub issuer: String,
+}
+
+/// ## Import issuer
+/// This endpoint allows submitting the CA information for the backend via a PEM
+/// file containing the CA certificate and its private key, concatenated.
+///
+/// * Path: {self.mount}/issuers/import/bundle
+/// * Method: POST
+/// * Response: [ImportIssuerResponse]
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#import-ca-certificates-and-keys
+
+#[derive(Builder, Debug, Default, Endpoint)]
+#[endpoint(
+    path = "{self.mount}/issuers/import/bundle",
+    method = "POST",
+    response = "ImportIssuerResponse",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct ImportIssuerRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    pub pem_bundle: String,
+}
+
+/// ## Delete issuer
+/// This endpoint deletes the issuer.
+///
+/// * Path: {self.mount}/issuer/{self.issuer}
+/// * Method: DELETE
+/// * Response: N/A
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#delete-issuer
+#[derive(Builder, Debug, Default, Endpoint)]
+#[endpoint(
+    path = "{self.mount}/issuer/{self.issuer}",
+    method = "DELETE",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct DeleteIssuerRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    #[endpoint(skip)]
+    pub issuer: String,
 }

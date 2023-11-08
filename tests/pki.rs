@@ -54,6 +54,10 @@ fn test() {
         // Test URLs
         crate::cert::urls::test_set(&client, &endpoint, &server).await;
         crate::cert::urls::test_read(&client, &endpoint).await;
+
+        // Test issuers
+        crate::issuer::test_read(&client, &endpoint).await;
+        crate::issuer::test_import(&client, &endpoint).await;
     });
 }
 
@@ -292,6 +296,73 @@ mod cert {
             .await;
             assert!(res.is_ok());
         }
+    }
+}
+mod issuer {
+    use std::fs;
+
+    use super::{Client, PKIEndpoint};
+    use vaultrs::{api::pki::responses::ImportIssuerResponse, pki::issuer};
+
+    pub async fn test_read(client: &impl Client, endpoint: &PKIEndpoint) {
+        let resp = issuer::read(client, endpoint.path.as_str(), None).await;
+        assert!(resp.is_ok());
+        let resp = resp.unwrap();
+        let certificate = resp.certificate;
+        let ca_chain = resp.ca_chain;
+        assert!(!certificate.is_empty());
+        assert_eq!(ca_chain.len(), 1);
+        assert_eq!(ca_chain[0], certificate);
+    }
+
+    pub async fn test_import(client: &impl Client, endpoint: &PKIEndpoint) {
+        let bundle = fs::read_to_string("tests/files/ca.pem").unwrap();
+
+        let resp = issuer::import(client, endpoint.path.as_str(), bundle.as_str()).await;
+        assert!(resp.is_ok());
+
+        let ImportIssuerResponse {
+            imported_issuers,
+            imported_keys,
+            existing_issuers,
+            existing_keys,
+            mapping,
+        } = resp.unwrap();
+
+        assert!(imported_issuers.is_some());
+        assert!(imported_keys.is_some());
+        assert!(existing_issuers.is_none());
+        assert!(existing_keys.is_none());
+        assert!(mapping.is_some());
+        assert_eq!(mapping.unwrap().len(), 1);
+
+        assert_eq!(imported_issuers.as_ref().unwrap().len(), 1);
+        let imported_issuer = &imported_issuers.unwrap()[0];
+
+        // attempt to import the same CA twice should return existing issuer
+        let resp = issuer::import(client, endpoint.path.as_str(), bundle.as_str()).await;
+        assert!(resp.is_ok());
+
+        let ImportIssuerResponse {
+            imported_issuers,
+            imported_keys,
+            existing_issuers,
+            existing_keys,
+            mapping,
+        } = resp.unwrap();
+
+        assert!(imported_issuers.is_none());
+        assert!(imported_keys.is_none());
+        assert!(existing_issuers.is_some());
+        assert!(existing_keys.is_some());
+        assert_eq!(mapping.unwrap().len(), 1);
+
+        assert_eq!(existing_issuers.as_ref().unwrap().len(), 1);
+        assert_eq!(&existing_issuers.unwrap()[0], imported_issuer);
+
+        // remove imported issuer
+        let resp = issuer::delete(client, endpoint.path.as_str(), imported_issuer).await;
+        assert!(resp.is_ok());
     }
 }
 
