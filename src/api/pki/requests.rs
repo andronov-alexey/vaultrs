@@ -2,10 +2,11 @@ use super::responses::{
     GenerateCertificateResponse, GenerateIntermediateResponse, GenerateRootResponse,
     ImportIssuerResponse, ListCertificatesResponse, ListRolesResponse, ReadCRLConfigResponse,
     ReadCertificateResponse, ReadIssuerCertificateResponse, ReadRoleResponse, ReadURLsResponse,
-    RevokeCertificateResponse, RotateCRLsResponse, SignCertificateResponse,
-    SignIntermediateResponse, SignSelfIssuedResponse,
+    RevokeCertificateResponse, RotateCRLsResponse, SetDefaultIssuerResponse,
+    SignCertificateResponse, SignIntermediateResponse, SignSelfIssuedResponse,
 };
 use rustify_derive::Endpoint;
+use serde::Serialize;
 
 /// ## Submit CA Information
 /// This endpoint allows submitting the CA information for the backend via a PEM
@@ -646,6 +647,29 @@ pub struct ImportIssuerRequest {
     #[endpoint(skip)]
     pub mount: String,
     pub pem_bundle: String,
+}
+
+/// ## Set default issuer
+/// This endpoint allows setting the value of the default issuer.
+///
+/// * Path: {self.mount}/config/issuers
+/// * Method: POST
+/// * Response: "SetDefaultIssuerResponse"
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#set-issuers-configuration
+
+#[derive(Builder, Debug, Default, Endpoint, Serialize)]
+#[endpoint(
+    path = "{self.mount}/config/issuers",
+    method = "POST",
+    response = "SetDefaultIssuerResponse",
+    builder = "false"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct SetDefaultIssuerRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    #[serde(rename = "default")]
+    pub default_issuer: String,
 }
 
 /// ## Delete issuer

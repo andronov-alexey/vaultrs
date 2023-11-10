@@ -365,8 +365,11 @@ pub mod issuer {
             pki::{
                 requests::{
                     DeleteIssuerRequest, ImportIssuerRequest, ReadIssuerCertificateRequest,
+                    SetDefaultIssuerRequest,
                 },
-                responses::{ImportIssuerResponse, ReadIssuerCertificateResponse},
+                responses::{
+                    ImportIssuerResponse, ReadIssuerCertificateResponse, SetDefaultIssuerResponse,
+                },
             },
         },
         client::Client,
@@ -414,6 +417,29 @@ pub mod issuer {
         let endpoint = ImportIssuerRequest::builder()
             .mount(mount)
             .pem_bundle(pem_bundle)
+            .build()
+            .unwrap();
+        api::exec_with_result(client, endpoint).await
+    }
+
+    /// Set default issuer
+    ///
+    /// # Arguments
+    ///
+    /// * `client`: vault client
+    /// * `mount`: vault pki mount path
+    /// * `default_issuer`: default issuer id or name
+    ///
+    /// See [SetDefaultIssuerRequest]
+    #[instrument(skip(client), err)]
+    pub async fn set_default(
+        client: &impl Client,
+        mount: &str,
+        default_issuer: &str,
+    ) -> Result<SetDefaultIssuerResponse, ClientError> {
+        let endpoint = SetDefaultIssuerRequest::builder()
+            .mount(mount)
+            .default_issuer(default_issuer)
             .build()
             .unwrap();
         api::exec_with_result(client, endpoint).await

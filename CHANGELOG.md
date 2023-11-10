@@ -12,6 +12,7 @@ and this project adheres to
 
 - Read issuer's certificate (see `issuer::read`)
 - Import issuer (see `issuer::import`)
+- Set default issuer (see `issuer::set_default`)
 - Delete issuer (see `issuer::delete`)
 
 ## [0.7.0] - 2023-03-25

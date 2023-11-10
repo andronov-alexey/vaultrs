@@ -188,3 +188,11 @@ pub struct ImportIssuerResponse {
     pub existing_keys: Option<Vec<String>>,
     pub mapping: Option<HashMap<String, String>>,
 }
+
+/// Response from executing
+/// [SetDefaultIssuerRequest][crate::api::pki::requests::SetDefaultIssuerRequest]
+#[derive(Deserialize, Debug, Serialize)]
+pub struct SetDefaultIssuerResponse {
+    pub default: String,
+    pub default_follows_latest_issuer: bool,
+}

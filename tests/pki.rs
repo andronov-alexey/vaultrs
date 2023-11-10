@@ -58,6 +58,7 @@ fn test() {
         // Test issuers
         crate::issuer::test_read(&client, &endpoint).await;
         crate::issuer::test_import(&client, &endpoint).await;
+        crate::issuer::test_set_default(&client, &endpoint).await;
     });
 }
 
@@ -362,6 +363,50 @@ mod issuer {
 
         // remove imported issuer
         let resp = issuer::delete(client, endpoint.path.as_str(), imported_issuer).await;
+        assert!(resp.is_ok());
+    }
+
+    pub async fn test_set_default(client: &impl Client, endpoint: &PKIEndpoint) {
+        let endpoint = &endpoint.path;
+
+        // get existing CA
+        let resp = issuer::read(client, endpoint, None).await.unwrap();
+        let old_issuer_cert = resp.certificate;
+        let old_issuer_id = resp.issuer_id;
+
+        // import new CA
+        let bundle = fs::read_to_string("tests/files/ca.pem").unwrap();
+        let resp = issuer::import(client, endpoint, &bundle).await.unwrap();
+        assert_eq!(resp.imported_issuers.as_ref().unwrap().len(), 1);
+        let new_issuer_id = &resp.imported_issuers.unwrap()[0];
+
+        // import new CA should not affect default issuer
+        let resp = issuer::read(client, endpoint, None).await.unwrap();
+        assert_eq!(resp.certificate, old_issuer_cert);
+        assert_eq!(resp.issuer_id, old_issuer_id);
+
+        // set imported CA as a default
+        let resp = issuer::set_default(client, endpoint, new_issuer_id)
+            .await
+            .unwrap();
+        assert_eq!(&resp.default, new_issuer_id);
+
+        // imported CA is a default issuer
+        let resp = issuer::read(client, endpoint, None).await.unwrap();
+        assert_eq!(&resp.issuer_id, new_issuer_id);
+
+        // restore default issuer
+        let resp = issuer::set_default(client, endpoint, &old_issuer_id)
+            .await
+            .unwrap();
+        assert_eq!(resp.default, old_issuer_id);
+
+        let resp = issuer::read(client, endpoint, None).await.unwrap();
+        assert_eq!(resp.certificate, old_issuer_cert);
+        assert_eq!(resp.issuer_id, old_issuer_id);
+
+        // remove imported issuer
+        let resp = issuer::delete(client, endpoint, new_issuer_id).await;
         assert!(resp.is_ok());
     }
 }
