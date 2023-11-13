@@ -429,7 +429,22 @@ mod role {
     pub async fn test_read(client: &impl Client, endpoint: &PKIEndpoint) {
         let res = role::read(client, endpoint.path.as_str(), endpoint.role.as_str()).await;
         assert!(res.is_ok());
-        assert!(res.unwrap().allow_any_name)
+        assert!(res.unwrap().allow_any_name);
+
+        // todoa: tests
+        let res = role::update(
+            client,
+            endpoint.path.as_str(),
+            endpoint.role.as_str(),
+            false,
+        )
+        .await;
+        assert!(res.is_ok());
+        assert!(!res.unwrap().allow_any_name);
+
+        let res = role::update(client, endpoint.path.as_str(), endpoint.role.as_str(), true).await;
+        assert!(res.is_ok());
+        assert!(res.unwrap().allow_any_name);
     }
 
     pub async fn test_set(client: &impl Client, endpoint: &PKIEndpoint) {

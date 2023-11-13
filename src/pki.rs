@@ -474,9 +474,9 @@ pub mod role {
     use crate::api::pki::{
         requests::{
             DeleteRoleRequest, ListRolesRequest, ReadRoleRequest, SetRoleRequest,
-            SetRoleRequestBuilder,
+            SetRoleRequestBuilder, UpdateRoleRequest,
         },
-        responses::{ListRolesResponse, ReadRoleResponse},
+        responses::{ListRolesResponse, ReadRoleResponse, UpdateRoleResponse},
     };
     use crate::client::Client;
     use crate::error::ClientError;
@@ -515,6 +515,26 @@ pub mod role {
         let endpoint = ReadRoleRequest::builder()
             .mount(mount)
             .name(name)
+            .build()
+            .unwrap();
+        api::exec_with_result(client, endpoint).await
+    }
+
+    /// Updates a role
+    ///
+    /// See [UpdateRoleRequest]
+    #[instrument(skip(client), err)]
+    pub async fn update(
+        client: &impl Client,
+        mount: &str,
+        name: &str,
+        // todoa: pass builder
+        allow_any_name: bool,
+    ) -> Result<UpdateRoleResponse, ClientError> {
+        let endpoint = UpdateRoleRequest::builder()
+            .mount(mount)
+            .name(name)
+            .allow_any_name(allow_any_name)
             .build()
             .unwrap();
         api::exec_with_result(client, endpoint).await

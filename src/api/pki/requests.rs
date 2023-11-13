@@ -3,7 +3,7 @@ use super::responses::{
     ImportIssuerResponse, ListCertificatesResponse, ListRolesResponse, ReadCRLConfigResponse,
     ReadCertificateResponse, ReadIssuerCertificateResponse, ReadRoleResponse, ReadURLsResponse,
     RevokeCertificateResponse, RotateCRLsResponse, SetDefaultIssuerResponse,
-    SignCertificateResponse, SignIntermediateResponse, SignSelfIssuedResponse,
+    SignCertificateResponse, SignIntermediateResponse, SignSelfIssuedResponse, UpdateRoleResponse,
 };
 use rustify_derive::Endpoint;
 use serde::Serialize;
@@ -438,7 +438,7 @@ pub struct GenerateIntermediateRequest {
 /// private key generated via /pki/intermediate/generate. The certificate should
 /// be submitted in PEM format.
 ///
-/// * Path: {{self.mount}/intermediate/set-signed
+/// * Path: {self.mount}/intermediate/set-signed
 /// * Method: POST
 /// * Response: N/A
 /// * Reference: https://www.vaultproject.io/api/secret/pki#set-signed-intermediate
@@ -453,6 +453,49 @@ pub struct SetSignedIntermediateRequest {
     #[endpoint(skip)]
     pub mount: String,
     pub certificate: String,
+}
+
+// todoa: impl
+/// ## Generate intermediate CSR
+/// This endpoint returns a new CSR for signing, optionally generating a new private key.
+///
+/// * Path: {self.mount}/intermediate/cross-sign
+/// * Method: POST
+/// * Response: N/A
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#generate-intermediate-csr
+#[derive(Builder, Debug, Default, Endpoint)]
+#[endpoint(
+    path = "{self.mount}/intermediate/cross-sign",
+    method = "POST",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct CrossSignRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+}
+
+// todoa: impl + move to issuers
+/// ## Generate intermediate CSR
+/// This endpoint returns a new CSR for signing, optionally generating a new private key.
+///
+/// * Path: {self.mount}/issuers/generate/intermediate/{self.type}
+/// * Method: POST
+/// * Response: N/A
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#generate-intermediate-csr
+#[derive(Builder, Debug, Default, Endpoint, Serialize)]
+#[endpoint(
+    path = "{self.mount}/intermediate/{self.test_type}",
+    method = "POST",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct GenerateIntermediateCSRRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    #[endpoint(skip)]
+    #[serde(rename = "type")]
+    pub test_type: String,
 }
 
 /// ## List Roles
@@ -497,8 +540,9 @@ pub struct ReadRoleRequest {
     pub name: String,
 }
 
-/// ## Create/Update Role
-/// This endpoint creates or updates the role definition.
+/// ## Create Role
+/// This endpoint creates the role definition.
+/// Properties of the role not explicitly set will be updated to defaults.
 ///
 /// * Path: {self.mount}/roles/{self.name}
 /// * Method: POST
@@ -512,6 +556,69 @@ pub struct ReadRoleRequest {
 )]
 #[builder(setter(into, strip_option), default)]
 pub struct SetRoleRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    #[endpoint(skip)]
+    pub name: String,
+    pub allow_any_name: Option<bool>,
+    pub allow_bare_domains: Option<bool>,
+    pub allow_glob_domains: Option<bool>,
+    pub allow_ip_sans: Option<bool>,
+    pub allow_localhost: Option<bool>,
+    pub allow_subdomains: Option<bool>,
+    pub allow_token_displayname: Option<bool>,
+    pub allowed_domains: Option<Vec<String>>,
+    pub allowed_domains_template: Option<bool>,
+    pub allowed_other_sans: Option<Vec<String>>,
+    pub allowed_serial_numbers: Option<Vec<String>>,
+    pub allowed_uri_sans: Option<Vec<String>>,
+    pub basic_constraints_valid_for_non_ca: Option<bool>,
+    pub client_flag: Option<bool>,
+    pub code_signing_flag: Option<bool>,
+    pub country: Option<Vec<String>>,
+    pub email_protection_flag: Option<bool>,
+    pub enforce_hostnames: Option<bool>,
+    pub ext_key_usage: Option<Vec<String>>,
+    pub ext_key_usage_oids: Option<Vec<String>>,
+    pub generate_lease: Option<bool>,
+    pub key_bits: Option<u64>,
+    pub key_type: Option<String>,
+    pub key_usage: Option<Vec<String>>,
+    pub locality: Option<Vec<String>>,
+    pub max_ttl: Option<u64>,
+    pub no_store: Option<bool>,
+    pub not_before_duration: Option<u64>,
+    pub organization: Option<Vec<String>>,
+    pub ou: Option<Vec<String>>,
+    pub policy_identifiers: Option<Vec<String>>,
+    pub postal_code: Option<Vec<String>>,
+    pub province: Option<Vec<String>>,
+    pub require_cn: Option<bool>,
+    pub server_flag: Option<bool>,
+    pub street_address: Option<Vec<String>>,
+    pub ttl: Option<u64>,
+    pub use_csr_common_name: Option<bool>,
+    pub use_csr_sans: Option<bool>,
+}
+
+// todoa: impl (Content-Type: application/merge-patch+json)
+/// ## Update Role
+/// This endpoint updates the role definition.
+/// Properties of the role not explicitly set won't change.
+///
+/// * Path: {self.mount}/roles/{self.name}
+/// * Method: PATCH
+/// * Response: [UpdateRoleResponse]
+/// * Reference: https://www.vaultproject.io/api/secret/pki#create-update-role
+#[derive(Builder, Debug, Default, Endpoint)]
+#[endpoint(
+    path = "{self.mount}/roles/{self.name}",
+    method = "PATCH",
+    response = "UpdateRoleResponse",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+pub struct UpdateRoleRequest {
     #[endpoint(skip)]
     pub mount: String,
     #[endpoint(skip)]
@@ -620,6 +727,31 @@ pub struct TidyRequest {
 )]
 #[builder(setter(into, strip_option), default)]
 pub struct ReadIssuerCertificateRequest {
+    #[endpoint(skip)]
+    pub mount: String,
+    #[endpoint(skip)]
+    pub issuer: String,
+}
+
+// todoa: impl
+/// ## Sign Intermediate
+/// This endpoint uses the configured CA certificate to issue a certificate with
+/// appropriate values for acting as an intermediate CA.
+///
+/// * Path: {self.mount}/issuers/{self.issuer}/sign-intermediate
+/// * Method: POST
+/// * Response: N/A
+/// * Reference: https://developer.hashicorp.com/vault/api-docs/secret/pki#sign-intermediate
+
+#[derive(Builder, Debug, Default, Endpoint)]
+#[endpoint(
+    path = "{self.mount}/issuers/{self.issuer}/sign-intermediate",
+    method = "POST",
+    builder = "true"
+)]
+#[builder(setter(into, strip_option), default)]
+// todoa: rename similarly to other requests
+pub struct IssuerSignIntermediateRequest {
     #[endpoint(skip)]
     pub mount: String,
     #[endpoint(skip)]
